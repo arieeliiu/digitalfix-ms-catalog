@@ -78,7 +78,9 @@ Ejemplo:
 La conexión a la base de datos se configura externamente mediante:
 
 ```text
-DB_URL
+DB_HOST
+DB_PORT (opcional, 1521)
+DB_SERVICE (opcional, ORCL)
 DB_USERNAME
 DB_PASSWORD
 ```
@@ -86,7 +88,7 @@ DB_PASSWORD
 Ejemplo de URL JDBC:
 
 ```text
-jdbc:oracle:thin:@//<endpoint-rds>:1521/DIGITALF
+jdbc:oracle:thin:@//<endpoint-rds>:1521/ORCL
 ```
 
 Las credenciales no deben almacenarse en el repositorio.
@@ -102,7 +104,7 @@ Configurar primero las variables de entorno y luego ejecutar:
 El servicio queda disponible por defecto en:
 
 ```text
-http://localhost:8080
+http://localhost:8081
 ```
 
 ## Pruebas
@@ -121,3 +123,7 @@ Las pruebas cubren:
 - Validaciones de entrada.
 - Respuestas `400 Bad Request`.
 - Respuestas `404 Not Found`.
+## Despliegue integrado
+
+Sin puertos publicados; usar el compose del BFF. Ver [guía](../digitalfix-ms-bff/DEPLOYMENT.md).
+Las pruebas incluyen persistencia JPA con H2; Oracle remoto se verifica manualmente.
