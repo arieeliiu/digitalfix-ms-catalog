@@ -9,6 +9,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
@@ -30,6 +31,11 @@ public class ServicioCatalogo {
     @DecimalMin(value = "0.0", inclusive = true, message = "La tarifa no puede ser negativa")
     @Column(nullable = false, precision = 12, scale = 2)
     private BigDecimal tarifa;
+
+    @NotNull(message = "El stock es obligatorio")
+    @Min(value = 0, message = "El stock no puede ser negativo")
+    @Column(nullable = false)
+    private Integer stock = 0;
 
     public ServicioCatalogo() {
     }
@@ -65,4 +71,13 @@ public class ServicioCatalogo {
     public void setTarifa(BigDecimal tarifa) {
         this.tarifa = tarifa;
     }
+
+    public Integer getStock() {
+        return stock;
+    }
+
+    public void setStock(Integer stock) {
+        this.stock = stock;
+    }
+    
 }

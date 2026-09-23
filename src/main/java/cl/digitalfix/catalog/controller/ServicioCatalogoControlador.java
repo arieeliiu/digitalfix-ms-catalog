@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.DeleteMapping;
 
 import cl.digitalfix.catalog.entity.ServicioCatalogo;
 import cl.digitalfix.catalog.service.ServicioCatalogoServicio;
@@ -43,5 +44,11 @@ public class ServicioCatalogoControlador {
             @Valid @RequestBody ServicioCatalogo servicio) {
 
         return servicioCatalogo.actualizarServicio(id, servicio);
+    }
+
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void eliminarServicio(@PathVariable Long id) {
+        servicioCatalogo.eliminarServicio(id);
     }
 }
