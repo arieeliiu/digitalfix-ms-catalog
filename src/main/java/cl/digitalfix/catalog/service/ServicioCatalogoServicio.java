@@ -34,7 +34,19 @@ public class ServicioCatalogoServicio {
         servicio.setNombre(datosActualizados.getNombre());
         servicio.setDescripcion(datosActualizados.getDescripcion());
         servicio.setTarifa(datosActualizados.getTarifa());
+        // Al desplegar, revisar cómo se incorpora stock en los registros existentes de Oracle.
+        servicio.setStock(datosActualizados.getStock());           
 
         return repositorio.save(servicio);
     }
+
+    public void eliminarServicio(Long id) {
+        if (!repositorio.existsById(id)) {
+            throw new RecursoNoEncontradoException(
+                    "No existe un servicio con id " + id);
+        }
+
+        repositorio.deleteById(id);
+    }
+
 }
