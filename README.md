@@ -21,10 +21,10 @@ Permite:
 
 - Listar servicios.
 - Crear servicios.
-- Actualizar servicios, tarifas y stock.
+- Actualizar servicios y tarifas.
 - Eliminar servicios.
 - Persistir los datos en Oracle Database en Amazon RDS.
-- Validar nombre obligatorio, tarifa no negativa y stock no negativo.
+- Validar nombre obligatorio y tarifa no negativa.
 
 ## Endpoints
 
@@ -46,8 +46,7 @@ Ejemplo:
 {
   "nombre": "Mantencion electrica",
   "descripcion": "Revision general de instalacion electrica",
-  "tarifa": 25000,
-  "stock": 10
+  "tarifa": 25000
 }
 ```
 
@@ -63,25 +62,23 @@ Ejemplo:
 {
   "nombre": "Mantencion electrica preventiva",
   "descripcion": "Revision preventiva de la instalacion",
-  "tarifa": 30000,
-  "stock": 8
+  "tarifa": 30000
 }
 ```
+
 ### Eliminar servicio
 
 ```http
 DELETE /api/catalog/services/{id}
 ```
 
-Elimina el servicio indicado. Si el identificador no existe, retorna 404 Not Found.
+Elimina el servicio indicado. Si el identificador no existe, retorna `404 Not Found`.
 
 ## Validaciones
 
 - `nombre` es obligatorio.
 - `tarifa` es obligatoria.
 - `tarifa` no puede ser negativa.
-- `stock` es obligatorio.
-- `stock` no puede ser negativo.
 - Datos inválidos retornan `400 Bad Request`.
 - Un identificador inexistente retorna `404 Not Found`.
 
@@ -152,5 +149,4 @@ Catalog se ejecuta como un servicio interno y no expone su puerto directamente a
 
 La orquestación del despliegue se mantiene en el repositorio `digitalfix-infra`, desde donde se configuran las variables de entorno y la comunicación con el BFF.
 
-La conexión real con Oracle RDS debe verificarse nuevamente al desplegar los cambios de esquema, especialmente la incorporación del campo `stock`.
-
+La conexión real con Oracle RDS debe verificarse nuevamente al desplegar los cambios.
