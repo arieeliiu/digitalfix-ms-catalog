@@ -1,6 +1,6 @@
 # DigitalFix - Microservicio Catalog
 
-Microservicio encargado de administrar el catálogo básico de servicios de mantenimiento eléctrico de DigitalFix.
+Microservicio encargado de administrar el catálogo de servicios técnicos y repuestos de DigitalFix.
 
 ## Tecnologías
 
@@ -19,22 +19,24 @@ Microservicio encargado de administrar el catálogo básico de servicios de mant
 
 Permite:
 
-- Listar servicios.
-- Crear servicios.
-- Actualizar servicios y tarifas.
-- Eliminar servicios.
+- Listar, crear, actualizar y eliminar servicios técnicos.
+- Administrar las tarifas de los servicios.
+- Listar, crear, actualizar y eliminar repuestos.
+- Administrar el stock de repuestos.
 - Persistir los datos en Oracle Database en Amazon RDS.
-- Validar nombre obligatorio y tarifa no negativa.
+- Validar nombre obligatorio, tarifa no negativa y stock de repuestos no negativo.
 
 ## Endpoints
 
-### Listar servicios
+### Servicios
+
+#### Listar servicios
 
 ```http
 GET /api/catalog/services
 ```
 
-### Crear servicio
+#### Crear servicio
 
 ```http
 POST /api/catalog/services
@@ -50,7 +52,7 @@ Ejemplo:
 }
 ```
 
-### Actualizar servicio
+#### Actualizar servicio
 
 ```http
 PUT /api/catalog/services/{id}
@@ -66,7 +68,7 @@ Ejemplo:
 }
 ```
 
-### Eliminar servicio
+#### Eliminar servicio
 
 ```http
 DELETE /api/catalog/services/{id}
@@ -74,11 +76,61 @@ DELETE /api/catalog/services/{id}
 
 Elimina el servicio indicado. Si el identificador no existe, retorna `404 Not Found`.
 
+### Repuestos
+
+#### Listar repuestos
+
+```http
+GET /api/catalog/spare-parts
+```
+
+#### Crear repuesto
+
+```http
+POST /api/catalog/spare-parts
+```
+
+Ejemplo:
+
+```json
+{
+  "nombre": "Interruptor termomagnetico",
+  "descripcion": "Interruptor para tablero electrico",
+  "stock": 20
+}
+```
+
+#### Actualizar repuesto
+
+```http
+PUT /api/catalog/spare-parts/{id}
+```
+
+Ejemplo:
+
+```json
+{
+  "nombre": "Interruptor termomagnetico",
+  "descripcion": "Interruptor para tablero electrico",
+  "stock": 15
+}
+```
+
+#### Eliminar repuesto
+
+```http
+DELETE /api/catalog/spare-parts/{id}
+```
+
+Elimina el repuesto indicado. Si el identificador no existe, retorna `404 Not Found`.
+
 ## Validaciones
 
 - `nombre` es obligatorio.
-- `tarifa` es obligatoria.
+- `tarifa` es obligatoria para los servicios.
 - `tarifa` no puede ser negativa.
+- `stock` es obligatorio para los repuestos.
+- `stock` no puede ser negativo.
 - Datos inválidos retornan `400 Bad Request`.
 - Un identificador inexistente retorna `404 Not Found`.
 
@@ -134,7 +186,7 @@ Ejecutar:
 .\mvnw.cmd verify
 ```
 
-Las pruebas cubren:
+Las pruebas actuales cubren:
 
 - Consulta correcta de servicios.
 - Creación correcta de servicios.
@@ -142,6 +194,8 @@ Las pruebas cubren:
 - Validaciones de entrada.
 - Respuestas `400 Bad Request`.
 - Respuestas `404 Not Found`.
+
+Además, se verificó que la incorporación del modelo de repuestos compile correctamente sin afectar las pruebas existentes.
 
 ## Despliegue integrado
 
