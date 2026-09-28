@@ -1,4 +1,5 @@
 package cl.digitalfix.catalog.controller;
+import cl.digitalfix.catalog.dto.DescontarStockSolicitud;
 
 import java.util.List;
 
@@ -51,4 +52,13 @@ public class RepuestoControlador {
     public void eliminarRepuesto(@PathVariable Long id) {
         repuestoServicio.eliminarRepuesto(id);
     }
+
+    @PostMapping("/discount-stock")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void descontarStock(
+            @Valid @RequestBody DescontarStockSolicitud solicitud) {
+
+        repuestoServicio.descontarStock(solicitud);
+    }
+
 }
