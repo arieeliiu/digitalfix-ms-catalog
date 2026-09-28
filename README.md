@@ -23,6 +23,10 @@ Permite:
 - Administrar las tarifas de los servicios.
 - Listar, crear, actualizar y eliminar repuestos.
 - Administrar el stock de repuestos.
+- Descontar stock asociado a una orden de trabajo.
+- Evitar descuentos duplicados para una misma orden.
+- Validar reintentos de descuento.
+- Evitar consumos simultáneos inconsistentes de stock.
 - Persistir los datos en Oracle Database en Amazon RDS.
 - Validar nombre obligatorio, tarifa no negativa y stock de repuestos no negativo.
 
@@ -74,7 +78,9 @@ Ejemplo:
 DELETE /api/catalog/services/{id}
 ```
 
-Elimina el servicio indicado. Si el identificador no existe, retorna `404 Not Found`.
+Elimina el servicio indicado.
+
+Si el identificador no existe, retorna `404 Not Found`.
 
 ### Repuestos
 
@@ -122,7 +128,9 @@ Ejemplo:
 DELETE /api/catalog/spare-parts/{id}
 ```
 
-Elimina el repuesto indicado. Si el identificador no existe, retorna `404 Not Found`.
+Elimina el repuesto indicado.
+
+Si el identificador no existe, retorna `404 Not Found`.
 
 #### Descontar stock por orden
 
@@ -130,7 +138,7 @@ Elimina el repuesto indicado. Si el identificador no existe, retorna `404 Not Fo
 POST /api/catalog/spare-parts/discount-stock
 ```
 
-Endpoint interno utilizado por Workorders cuando una orden es asignada.
+Endpoint interno destinado a ser utilizado por Workorders cuando una orden es asignada.
 
 Ejemplo:
 
@@ -150,15 +158,50 @@ Catalog valida que:
 
 - todos los repuestos existan;
 - exista stock suficiente para todos;
-- una misma orden no descuente stock más de una vez.
+- una misma orden no descuente stock más de una vez;
+- un reintento de la misma orden corresponda a los mismos repuestos y cantidades.
 
-Si la operación es válida, descuenta las cantidades solicitadas y responde `204 No Content`.
+Si una orden ya descontó stock y recibe nuevamente exactamente la misma solicitud, la operación se considera un reintento válido y no vuelve a descontar.
+
+Si la misma orden intenta descontar repuestos o cantidades diferentes, responde `409 Conflict`.
 
 Si algún repuesto no existe, responde `404 Not Found`.
 
 Si no existe stock suficiente, responde `409 Conflict`.
 
-El descuento se ejecuta dentro de una transacción para evitar actualizaciones parciales de stock.
+El descuento se ejecuta dentro de una transacción.
+
+Durante la operación, los repuestos involucrados se bloquean para actualización mediante bloqueo pesimista, evitando que dos órdenes consuman simultáneamente las mismas existencias.
+
+Los identificadores y cantidades repetidos dentro de una misma solicitud se agrupan antes de validar y descontar el stock.
+
+## Idempotencia del descuento
+
+Cada descuento queda asociado al identificador de la orden.
+
+Catalog guarda una firma de la solicitud procesada, basada en los identificadores de repuesto y sus cantidades.
+
+Ejemplo:
+
+```text
+4:2|7:1
+```
+
+Esto permite distinguir entre:
+
+```text
+Misma orden + mismos repuestos y cantidades
+→ reintento válido
+→ no vuelve a descontar
+```
+
+y:
+
+```text
+Misma orden + repuestos o cantidades diferentes
+→ conflicto
+→ 409 Conflict
+```
 
 ## Validaciones
 
@@ -167,8 +210,13 @@ El descuento se ejecuta dentro de una transacción para evitar actualizaciones p
 - `tarifa` no puede ser negativa.
 - `stock` es obligatorio para los repuestos.
 - `stock` no puede ser negativo.
+- `ordenId` debe ser válido para una solicitud de descuento.
+- `repuestoId` debe ser positivo.
+- `cantidad` debe ser mayor que cero.
+- Una solicitud de descuento debe contener al menos un repuesto.
 - Datos inválidos retornan `400 Bad Request`.
 - Un identificador inexistente retorna `404 Not Found`.
+- Stock insuficiente o un reintento inconsistente retorna `409 Conflict`.
 
 ## Variables de entorno
 
@@ -186,10 +234,17 @@ O construirla a partir de:
 
 ```text
 DB_HOST
-DB_PORT (opcional, por defecto 1521)
-DB_SERVICE (opcional, por defecto ORCL)
+DB_PORT
+DB_SERVICE
 DB_USERNAME
 DB_PASSWORD
+```
+
+Valores por defecto:
+
+```text
+DB_PORT=1521
+DB_SERVICE=ORCL
 ```
 
 Formato esperado:
@@ -214,6 +269,20 @@ El servicio queda disponible por defecto en:
 http://localhost:8081
 ```
 
+## Persistencia
+
+Durante el desarrollo, Hibernate administra la actualización del esquema mediante:
+
+```text
+spring.jpa.hibernate.ddl-auto=update
+```
+
+Catalog persiste actualmente información relacionada con:
+
+- servicios técnicos;
+- repuestos y stock;
+- órdenes que ya realizaron un descuento de stock.
+
 ## Pruebas
 
 Ejecutar:
@@ -222,21 +291,44 @@ Ejecutar:
 .\mvnw.cmd verify
 ```
 
-Las pruebas actuales cubren:
+Las pruebas automatizadas actuales cubren principalmente:
 
-- Consulta correcta de servicios.
-- Creación correcta de servicios.
-- Actualización correcta de servicios.
-- Validaciones de entrada.
-- Respuestas `400 Bad Request`.
-- Respuestas `404 Not Found`.
+- consulta correcta de servicios;
+- creación correcta de servicios;
+- actualización correcta de servicios;
+- validaciones de entrada;
+- respuestas `400 Bad Request`;
+- respuestas `404 Not Found`;
+- persistencia mediante H2 en el entorno de pruebas existente.
 
-Además, se verificó que la incorporación del modelo de repuestos compile correctamente sin afectar las pruebas existentes.
+Además, se verificó con `mvnw verify` que la lógica de descuento de stock, idempotencia por orden y bloqueo de repuestos compila correctamente sin afectar las pruebas automatizadas existentes.
+
+Actualmente no existen pruebas automatizadas específicas para:
+
+- descuento de stock;
+- reintentos idempotentes;
+- conflictos por contenido diferente;
+- concurrencia sobre el mismo stock.
+
+Estos comportamientos deben comprobarse mediante pruebas específicas o durante la integración entre Workorders y Catalog.
 
 ## Despliegue integrado
 
-Catalog se ejecuta como un servicio interno y no expone su puerto directamente a Internet.
+Catalog se ejecuta como un servicio interno y no debe exponerse directamente a Internet.
 
-La orquestación del despliegue se mantiene en el repositorio `digitalfix-infra`, desde donde se configuran las variables de entorno y la comunicación con el BFF.
+La arquitectura esperada es:
 
-La conexión real con Oracle RDS debe verificarse nuevamente al desplegar los cambios.
+```text
+Frontend
+→ API Gateway
+→ BFF
+→ Workorders
+→ Catalog
+→ Oracle RDS
+```
+
+El descuento de stock será solicitado por Workorders al asignar una orden.
+
+La orquestación del despliegue se mantiene en el repositorio `digitalfix-infra`, desde donde se configuran las variables de entorno y la comunicación entre los servicios.
+
+La conexión real con Oracle RDS debe verificarse nuevamente después de desplegar esta versión.
