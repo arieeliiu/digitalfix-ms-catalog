@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.TreeMap;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -65,18 +66,37 @@ public class RepuestoServicio {
     @Transactional
     public void descontarStock(DescontarStockSolicitud solicitud) {
 
-        if (descuentoStockRepositorio.existsById(solicitud.ordenId())) {
-            return;
-        }
-
         Map<Long, Integer> cantidadesSolicitadas = solicitud.repuestos()
                 .stream()
                 .collect(Collectors.toMap(
                         RepuestoStockSolicitud::repuestoId,
                         RepuestoStockSolicitud::cantidad,
-                        Integer::sum));
+                        Integer::sum,
+                        TreeMap::new));
 
-        List<Repuesto> repuestos = repositorio.findAllById(
+        String firmaSolicitud = cantidadesSolicitadas.entrySet()
+                .stream()
+                .map(entrada -> entrada.getKey() + ":" + entrada.getValue())
+                .collect(Collectors.joining("|"));
+
+        var descuentoExistente =
+                descuentoStockRepositorio.findById(solicitud.ordenId());
+
+        if (descuentoExistente.isPresent()) {
+
+            if (!descuentoExistente.get()
+                    .getFirmaSolicitud()
+                    .equals(firmaSolicitud)) {
+
+                throw new ResponseStatusException(
+                        HttpStatus.CONFLICT,
+                        "La orden ya desconto stock con repuestos diferentes");
+            }
+
+            return;
+        }
+
+        List<Repuesto> repuestos = repositorio.buscarTodosParaActualizar(
                 cantidadesSolicitadas.keySet());
 
         Map<Long, Repuesto> repuestosPorId = repuestos.stream()
@@ -113,6 +133,8 @@ public class RepuestoServicio {
         repositorio.saveAll(repuestos);
 
         descuentoStockRepositorio.save(
-                new DescuentoStockOrden(solicitud.ordenId()));
+            new DescuentoStockOrden(
+                    solicitud.ordenId(),
+                    firmaSolicitud));
     }
 }
