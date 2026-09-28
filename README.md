@@ -124,6 +124,42 @@ DELETE /api/catalog/spare-parts/{id}
 
 Elimina el repuesto indicado. Si el identificador no existe, retorna `404 Not Found`.
 
+#### Descontar stock por orden
+
+```http
+POST /api/catalog/spare-parts/discount-stock
+```
+
+Endpoint interno utilizado por Workorders cuando una orden es asignada.
+
+Ejemplo:
+
+```json
+{
+  "ordenId": 15,
+  "repuestos": [
+    {
+      "repuestoId": 4,
+      "cantidad": 2
+    }
+  ]
+}
+```
+
+Catalog valida que:
+
+- todos los repuestos existan;
+- exista stock suficiente para todos;
+- una misma orden no descuente stock más de una vez.
+
+Si la operación es válida, descuenta las cantidades solicitadas y responde `204 No Content`.
+
+Si algún repuesto no existe, responde `404 Not Found`.
+
+Si no existe stock suficiente, responde `409 Conflict`.
+
+El descuento se ejecuta dentro de una transacción para evitar actualizaciones parciales de stock.
+
 ## Validaciones
 
 - `nombre` es obligatorio.
