@@ -1,4 +1,4 @@
-package cl.digitalfix.catalog.dto;
+package cl.digitalfix.catalog.dto.request;
 
 import java.util.List;
 

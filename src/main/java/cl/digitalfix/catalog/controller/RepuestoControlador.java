@@ -1,5 +1,5 @@
 package cl.digitalfix.catalog.controller;
-import cl.digitalfix.catalog.dto.DescontarStockSolicitud;
+import cl.digitalfix.catalog.dto.request.DescontarStockSolicitud;
 
 import java.util.List;
 
@@ -14,7 +14,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-import cl.digitalfix.catalog.entity.Repuesto;
+import cl.digitalfix.catalog.dto.request.RepuestoSolicitud;
+import cl.digitalfix.catalog.dto.response.RepuestoResponse;
 import cl.digitalfix.catalog.service.RepuestoServicio;
 import jakarta.validation.Valid;
 
@@ -29,20 +30,20 @@ public class RepuestoControlador {
     }
 
     @GetMapping
-    public List<Repuesto> listarRepuestos() {
+    public List<RepuestoResponse> listarRepuestos() {
         return repuestoServicio.listarRepuestos();
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public Repuesto crearRepuesto(@Valid @RequestBody Repuesto repuesto) {
+    public RepuestoResponse crearRepuesto(@Valid @RequestBody RepuestoSolicitud repuesto) {
         return repuestoServicio.crearRepuesto(repuesto);
     }
 
     @PutMapping("/{id}")
-    public Repuesto actualizarRepuesto(
+    public RepuestoResponse actualizarRepuesto(
             @PathVariable Long id,
-            @Valid @RequestBody Repuesto repuesto) {
+            @Valid @RequestBody RepuestoSolicitud repuesto) {
 
         return repuestoServicio.actualizarRepuesto(id, repuesto);
     }

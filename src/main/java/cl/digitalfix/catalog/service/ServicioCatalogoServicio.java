@@ -5,6 +5,9 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 
 import cl.digitalfix.catalog.entity.ServicioCatalogo;
+import cl.digitalfix.catalog.dto.request.ServicioCatalogoSolicitud;
+import cl.digitalfix.catalog.dto.response.ServicioCatalogoResponse;
+import cl.digitalfix.catalog.mapper.ServicioCatalogoMapper;
 import cl.digitalfix.catalog.exception.RecursoNoEncontradoException;
 import cl.digitalfix.catalog.repository.ServicioCatalogoRepositorio;
 
@@ -17,16 +20,16 @@ public class ServicioCatalogoServicio {
         this.repositorio = repositorio;
     }
 
-    public List<ServicioCatalogo> listarServicios() {
-        return repositorio.findAll();
+    public List<ServicioCatalogoResponse> listarServicios() {
+        return repositorio.findAll().stream().map(ServicioCatalogoMapper::respuesta).toList();
     }
 
-    public ServicioCatalogo crearServicio(ServicioCatalogo servicio) {
-        servicio.setId(null);
-        return repositorio.save(servicio);
+    public ServicioCatalogoResponse crearServicio(ServicioCatalogoSolicitud solicitud) {
+        var servicio = ServicioCatalogoMapper.entidad(solicitud);
+        return ServicioCatalogoMapper.respuesta(repositorio.save(servicio));
     }
 
-    public ServicioCatalogo actualizarServicio(Long id, ServicioCatalogo datosActualizados) {
+    public ServicioCatalogoResponse actualizarServicio(Long id, ServicioCatalogoSolicitud datosActualizados) {
         ServicioCatalogo servicio = repositorio.findById(id)
                 .orElseThrow(() -> new RecursoNoEncontradoException(
                         "No existe un servicio con id " + id));
@@ -34,8 +37,8 @@ public class ServicioCatalogoServicio {
         servicio.setNombre(datosActualizados.getNombre());
         servicio.setDescripcion(datosActualizados.getDescripcion());
         servicio.setTarifa(datosActualizados.getTarifa());
-          
-        return repositorio.save(servicio);
+
+        return ServicioCatalogoMapper.respuesta(repositorio.save(servicio));
     }
 
     public void eliminarServicio(Long id) {

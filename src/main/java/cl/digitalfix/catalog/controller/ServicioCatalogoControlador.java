@@ -13,7 +13,8 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.DeleteMapping;
 
-import cl.digitalfix.catalog.entity.ServicioCatalogo;
+import cl.digitalfix.catalog.dto.request.ServicioCatalogoSolicitud;
+import cl.digitalfix.catalog.dto.response.ServicioCatalogoResponse;
 import cl.digitalfix.catalog.service.ServicioCatalogoServicio;
 import jakarta.validation.Valid;
 
@@ -28,20 +29,20 @@ public class ServicioCatalogoControlador {
     }
 
     @GetMapping
-    public List<ServicioCatalogo> listarServicios() {
+    public List<ServicioCatalogoResponse> listarServicios() {
         return servicioCatalogo.listarServicios();
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public ServicioCatalogo crearServicio(@Valid @RequestBody ServicioCatalogo servicio) {
+    public ServicioCatalogoResponse crearServicio(@Valid @RequestBody ServicioCatalogoSolicitud servicio) {
         return servicioCatalogo.crearServicio(servicio);
     }
 
     @PutMapping("/{id}")
-    public ServicioCatalogo actualizarServicio(
+    public ServicioCatalogoResponse actualizarServicio(
             @PathVariable Long id,
-            @Valid @RequestBody ServicioCatalogo servicio) {
+            @Valid @RequestBody ServicioCatalogoSolicitud servicio) {
 
         return servicioCatalogo.actualizarServicio(id, servicio);
     }

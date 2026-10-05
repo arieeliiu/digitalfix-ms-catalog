@@ -332,3 +332,15 @@ El descuento de stock será solicitado por Workorders al asignar una orden.
 La orquestación del despliegue se mantiene en el repositorio `digitalfix-infra`, desde donde se configuran las variables de entorno y la comunicación entre los servicios.
 
 La conexión real con Oracle RDS debe verificarse nuevamente después de desplegar esta versión.
+
+## Refactor por capas (5 de octubre de 2026)
+
+Los controllers utilizan DTOs independientes en `dto/request` y `dto/response`.
+La capa service coordina persistencia y mapeo mediante `mapper`, sin exponer
+entidades JPA en los contratos HTTP. Las validaciones, rutas, códigos, estados,
+reglas de dominio y configuración existentes se conservan.
+Las solicitudes de repuestos conservan stock cero cuando se omite el campo y rechazan un valor null explícito.
+
+La revisión y las decisiones integradas se documentan en
+[REFACTOR.md del BFF](../digitalfix-ms-bff/REFACTOR.md), disponible en el workspace
+con los repositorios hermanos. No se incorpora RabbitMQ ni Kafka.

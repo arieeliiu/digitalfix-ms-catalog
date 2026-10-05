@@ -11,10 +11,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-import cl.digitalfix.catalog.dto.DescontarStockSolicitud;
-import cl.digitalfix.catalog.dto.RepuestoStockSolicitud;
+import cl.digitalfix.catalog.dto.request.DescontarStockSolicitud;
+import cl.digitalfix.catalog.dto.request.RepuestoStockSolicitud;
 import cl.digitalfix.catalog.entity.DescuentoStockOrden;
 import cl.digitalfix.catalog.entity.Repuesto;
+import cl.digitalfix.catalog.dto.request.RepuestoSolicitud;
+import cl.digitalfix.catalog.dto.response.RepuestoResponse;
+import cl.digitalfix.catalog.mapper.RepuestoMapper;
 import cl.digitalfix.catalog.exception.RecursoNoEncontradoException;
 import cl.digitalfix.catalog.repository.DescuentoStockOrdenRepositorio;
 import cl.digitalfix.catalog.repository.RepuestoRepositorio;
@@ -33,16 +36,16 @@ public class RepuestoServicio {
         this.descuentoStockRepositorio = descuentoStockRepositorio;
     }
 
-    public List<Repuesto> listarRepuestos() {
-        return repositorio.findAll();
+    public List<RepuestoResponse> listarRepuestos() {
+        return repositorio.findAll().stream().map(RepuestoMapper::respuesta).toList();
     }
 
-    public Repuesto crearRepuesto(Repuesto repuesto) {
-        repuesto.setId(null);
-        return repositorio.save(repuesto);
+    public RepuestoResponse crearRepuesto(RepuestoSolicitud solicitud) {
+        var repuesto = RepuestoMapper.entidad(solicitud);
+        return RepuestoMapper.respuesta(repositorio.save(repuesto));
     }
 
-    public Repuesto actualizarRepuesto(Long id, Repuesto datosActualizados) {
+    public RepuestoResponse actualizarRepuesto(Long id, RepuestoSolicitud datosActualizados) {
         Repuesto repuesto = repositorio.findById(id)
                 .orElseThrow(() -> new RecursoNoEncontradoException(
                         "No existe un repuesto con id " + id));
@@ -51,7 +54,7 @@ public class RepuestoServicio {
         repuesto.setDescripcion(datosActualizados.getDescripcion());
         repuesto.setStock(datosActualizados.getStock());
 
-        return repositorio.save(repuesto);
+        return RepuestoMapper.respuesta(repositorio.save(repuesto));
     }
 
     public void eliminarRepuesto(Long id) {
