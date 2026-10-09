@@ -1,13 +1,13 @@
 package cl.digitalfix.catalog.mapper;
 
-import cl.digitalfix.catalog.entity.Repuesto;
-import cl.digitalfix.catalog.dto.request.RepuestoSolicitud;
+import cl.digitalfix.catalog.dto.request.RepuestoRequest;
 import cl.digitalfix.catalog.dto.response.RepuestoResponse;
+import cl.digitalfix.catalog.entity.Repuesto;
 
 public final class RepuestoMapper {
     private RepuestoMapper() {}
 
-    public static Repuesto entidad(RepuestoSolicitud solicitud) {
+    public static Repuesto entidad(RepuestoRequest solicitud) {
         var entidad = new Repuesto();
         entidad.setNombre(solicitud.getNombre());
         entidad.setDescripcion(solicitud.getDescripcion());

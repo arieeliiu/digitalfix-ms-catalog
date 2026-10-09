@@ -2,50 +2,45 @@ package cl.digitalfix.catalog.service;
 
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.TreeMap;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-import cl.digitalfix.catalog.dto.request.DescontarStockSolicitud;
-import cl.digitalfix.catalog.dto.request.RepuestoStockSolicitud;
+import lombok.RequiredArgsConstructor;
+
+import cl.digitalfix.catalog.dto.request.DescontarStockRequest;
+import cl.digitalfix.catalog.dto.request.RepuestoRequest;
+import cl.digitalfix.catalog.dto.request.RepuestoStockRequest;
+import cl.digitalfix.catalog.dto.response.RepuestoResponse;
 import cl.digitalfix.catalog.entity.DescuentoStockOrden;
 import cl.digitalfix.catalog.entity.Repuesto;
-import cl.digitalfix.catalog.dto.request.RepuestoSolicitud;
-import cl.digitalfix.catalog.dto.response.RepuestoResponse;
-import cl.digitalfix.catalog.mapper.RepuestoMapper;
 import cl.digitalfix.catalog.exception.RecursoNoEncontradoException;
-import cl.digitalfix.catalog.repository.DescuentoStockOrdenRepositorio;
-import cl.digitalfix.catalog.repository.RepuestoRepositorio;
+import cl.digitalfix.catalog.mapper.RepuestoMapper;
+import cl.digitalfix.catalog.repository.DescuentoStockOrdenRepository;
+import cl.digitalfix.catalog.repository.RepuestoRepository;
 
 @Service
-public class RepuestoServicio {
+@RequiredArgsConstructor
+public class RepuestoService {
 
-    private final RepuestoRepositorio repositorio;
-    private final DescuentoStockOrdenRepositorio descuentoStockRepositorio;
-
-    public RepuestoServicio(
-            RepuestoRepositorio repositorio,
-            DescuentoStockOrdenRepositorio descuentoStockRepositorio) {
-
-        this.repositorio = repositorio;
-        this.descuentoStockRepositorio = descuentoStockRepositorio;
-    }
+    private final RepuestoRepository repositorio;
+    private final DescuentoStockOrdenRepository descuentoStockRepositorio;
 
     public List<RepuestoResponse> listarRepuestos() {
         return repositorio.findAll().stream().map(RepuestoMapper::respuesta).toList();
     }
 
-    public RepuestoResponse crearRepuesto(RepuestoSolicitud solicitud) {
+    public RepuestoResponse crearRepuesto(RepuestoRequest solicitud) {
         var repuesto = RepuestoMapper.entidad(solicitud);
         return RepuestoMapper.respuesta(repositorio.save(repuesto));
     }
 
-    public RepuestoResponse actualizarRepuesto(Long id, RepuestoSolicitud datosActualizados) {
+    public RepuestoResponse actualizarRepuesto(Long id, RepuestoRequest datosActualizados) {
         Repuesto repuesto = repositorio.findById(id)
                 .orElseThrow(() -> new RecursoNoEncontradoException(
                         "No existe un repuesto con id " + id));
@@ -67,13 +62,13 @@ public class RepuestoServicio {
     }
 
     @Transactional
-    public void descontarStock(DescontarStockSolicitud solicitud) {
+    public void descontarStock(DescontarStockRequest solicitud) {
 
         Map<Long, Integer> cantidadesSolicitadas = solicitud.repuestos()
                 .stream()
                 .collect(Collectors.toMap(
-                        RepuestoStockSolicitud::repuestoId,
-                        RepuestoStockSolicitud::cantidad,
+                        RepuestoStockRequest::repuestoId,
+                        RepuestoStockRequest::cantidad,
                         Integer::sum,
                         TreeMap::new));
 

@@ -4,17 +4,17 @@ import java.math.BigDecimal;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import cl.digitalfix.catalog.dto.request.ServicioCatalogoSolicitud;
-import cl.digitalfix.catalog.service.ServicioCatalogoServicio;
+import cl.digitalfix.catalog.dto.request.ServicioRequest;
+import cl.digitalfix.catalog.service.ServicioService;
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
 class PersistenciaCatalogoTests {
-    @Autowired ServicioCatalogoServicio servicio;
+    @Autowired ServicioService servicio;
 
     @Test
     void guardaYConsultaCatalogoConJpaReal() {
-        var nuevo = new ServicioCatalogoSolicitud();
+        var nuevo = new ServicioRequest();
         nuevo.setNombre("Mantención");
         nuevo.setDescripcion("Revisión eléctrica");
         nuevo.setTarifa(new BigDecimal("25000.00"));

@@ -4,5 +4,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import cl.digitalfix.catalog.entity.ServicioCatalogo;
 
-public interface ServicioCatalogoRepositorio extends JpaRepository<ServicioCatalogo, Long> {
+public interface ServicioRepository extends JpaRepository<ServicioCatalogo, Long> {
 }

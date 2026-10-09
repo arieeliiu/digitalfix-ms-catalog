@@ -10,20 +10,20 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import cl.digitalfix.catalog.entity.Repuesto;
-import cl.digitalfix.catalog.repository.RepuestoRepositorio;
-import cl.digitalfix.catalog.repository.DescuentoStockOrdenRepositorio;
-import cl.digitalfix.catalog.service.RepuestoServicio;
+import cl.digitalfix.catalog.repository.RepuestoRepository;
+import cl.digitalfix.catalog.repository.DescuentoStockOrdenRepository;
+import cl.digitalfix.catalog.service.RepuestoService;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest(RepuestoControlador.class)
-@Import(RepuestoServicio.class)
-class RepuestoControladorTests {
+@WebMvcTest(RepuestoController.class)
+@Import(RepuestoService.class)
+class RepuestoControllerTests {
     @Autowired MockMvc cliente;
-    @MockitoBean RepuestoRepositorio repositorio;
-    @MockitoBean DescuentoStockOrdenRepositorio descuentos;
+    @MockitoBean RepuestoRepository repositorio;
+    @MockitoBean DescuentoStockOrdenRepository descuentos;
 
     @Test
     void omitirStockConservaCeroEIgnoraIdDelRequest() throws Exception {
@@ -34,7 +34,7 @@ class RepuestoControladorTests {
             return repuesto;
         });
         cliente.perform(post("/api/catalog/spare-parts").contentType(MediaType.APPLICATION_JSON)
-                .content("{\"id\":99,\"nombre\":\"Interruptor\"}"))
+                .content("{\"id\":99,\"nombre\":\"Interruptor\",\"descripcion\":\"Tablero\"}"))
                 .andExpect(status().isCreated()).andExpect(jsonPath("$.id").value(7))
                 .andExpect(jsonPath("$.nombre").value("Interruptor"))
                 .andExpect(jsonPath("$.stock").value(0));
@@ -43,13 +43,22 @@ class RepuestoControladorTests {
     @Test
     void stockNullYNegativoConservanErrores() throws Exception {
         cliente.perform(post("/api/catalog/spare-parts").contentType(MediaType.APPLICATION_JSON)
-                .content("{\"nombre\":\"Interruptor\",\"stock\":null}"))
+                .content("{\"nombre\":\"Interruptor\",\"descripcion\":\"Tablero\",\"stock\":null}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.stock").value("El stock es obligatorio"));
         cliente.perform(post("/api/catalog/spare-parts").contentType(MediaType.APPLICATION_JSON)
-                .content("{\"nombre\":\"Interruptor\",\"stock\":-1}"))
+                .content("{\"nombre\":\"Interruptor\",\"descripcion\":\"Tablero\",\"stock\":-1}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.stock").value("El stock no puede ser negativo"));
+        verifyNoInteractions(repositorio);
+    }
+
+    @Test
+    void descripcionAusenteConservaValidacionLocal() throws Exception {
+        cliente.perform(post("/api/catalog/spare-parts").contentType(MediaType.APPLICATION_JSON)
+                .content("{\"nombre\":\"Interruptor\",\"stock\":5}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.descripcion").value("El repuesto necesita una descripción"));
         verifyNoInteractions(repositorio);
     }
 
