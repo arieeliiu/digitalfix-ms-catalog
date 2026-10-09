@@ -1,7 +1,8 @@
 package cl.digitalfix.catalog.controller;
-import cl.digitalfix.catalog.dto.DescontarStockSolicitud;
 
 import java.util.List;
+
+import jakarta.validation.Valid;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -14,35 +15,35 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-import cl.digitalfix.catalog.entity.Repuesto;
-import cl.digitalfix.catalog.service.RepuestoServicio;
-import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+
+import cl.digitalfix.catalog.dto.request.DescontarStockRequest;
+import cl.digitalfix.catalog.dto.request.RepuestoRequest;
+import cl.digitalfix.catalog.dto.response.RepuestoResponse;
+import cl.digitalfix.catalog.service.RepuestoService;
 
 @RestController
 @RequestMapping("/api/catalog/spare-parts")
-public class RepuestoControlador {
+@RequiredArgsConstructor
+public class RepuestoController {
 
-    private final RepuestoServicio repuestoServicio;
-
-    public RepuestoControlador(RepuestoServicio repuestoServicio) {
-        this.repuestoServicio = repuestoServicio;
-    }
+    private final RepuestoService repuestoServicio;
 
     @GetMapping
-    public List<Repuesto> listarRepuestos() {
+    public List<RepuestoResponse> listarRepuestos() {
         return repuestoServicio.listarRepuestos();
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public Repuesto crearRepuesto(@Valid @RequestBody Repuesto repuesto) {
+    public RepuestoResponse crearRepuesto(@Valid @RequestBody RepuestoRequest repuesto) {
         return repuestoServicio.crearRepuesto(repuesto);
     }
 
     @PutMapping("/{id}")
-    public Repuesto actualizarRepuesto(
+    public RepuestoResponse actualizarRepuesto(
             @PathVariable Long id,
-            @Valid @RequestBody Repuesto repuesto) {
+            @Valid @RequestBody RepuestoRequest repuesto) {
 
         return repuestoServicio.actualizarRepuesto(id, repuesto);
     }
@@ -56,7 +57,7 @@ public class RepuestoControlador {
     @PostMapping("/discount-stock")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void descontarStock(
-            @Valid @RequestBody DescontarStockSolicitud solicitud) {
+            @Valid @RequestBody DescontarStockRequest solicitud) {
 
         repuestoServicio.descontarStock(solicitud);
     }

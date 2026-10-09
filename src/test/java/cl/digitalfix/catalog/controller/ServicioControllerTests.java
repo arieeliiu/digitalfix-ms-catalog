@@ -19,22 +19,23 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-import cl.digitalfix.catalog.entity.ServicioCatalogo;
+import cl.digitalfix.catalog.dto.request.ServicioRequest;
+import cl.digitalfix.catalog.dto.response.ServicioResponse;
 import cl.digitalfix.catalog.exception.RecursoNoEncontradoException;
-import cl.digitalfix.catalog.service.ServicioCatalogoServicio;
+import cl.digitalfix.catalog.service.ServicioService;
 
-@WebMvcTest(ServicioCatalogoControlador.class)
-class ServicioCatalogoControladorTests {
+@WebMvcTest(ServicioController.class)
+class ServicioControllerTests {
 
     @Autowired
     private MockMvc mockMvc;
 
     @MockitoBean
-    private ServicioCatalogoServicio servicioCatalogo;
+    private ServicioService servicioCatalogo;
 
     @Test
     void listarServiciosRetornaServicios() throws Exception {
-        ServicioCatalogo servicio = crearServicioEjemplo();
+        ServicioResponse servicio = crearServicioEjemplo();
 
         when(servicioCatalogo.listarServicios())
                 .thenReturn(List.of(servicio));
@@ -47,9 +48,9 @@ class ServicioCatalogoControladorTests {
 
     @Test
     void crearServicioRetornaCreado() throws Exception {
-        ServicioCatalogo servicio = crearServicioEjemplo();
+        ServicioResponse servicio = crearServicioEjemplo();
 
-        when(servicioCatalogo.crearServicio(any(ServicioCatalogo.class)))
+        when(servicioCatalogo.crearServicio(any(ServicioRequest.class)))
                 .thenReturn(servicio);
 
         mockMvc.perform(post("/api/catalog/services")
@@ -68,13 +69,12 @@ class ServicioCatalogoControladorTests {
 
     @Test
     void actualizarServicioRetornaServicioActualizado() throws Exception {
-        ServicioCatalogo servicio = crearServicioEjemplo();
-        servicio.setNombre("Mantencion preventiva");
-        servicio.setTarifa(new BigDecimal("30000"));
+        ServicioResponse servicio = crearServicioEjemplo();
+        servicio = new ServicioResponse(1L, "Mantencion preventiva", "Revision preventiva", new BigDecimal("30000"));
 
         when(servicioCatalogo.actualizarServicio(
                 eq(1L),
-                any(ServicioCatalogo.class)))
+                any(ServicioRequest.class)))
                 .thenReturn(servicio);
 
         mockMvc.perform(put("/api/catalog/services/1")
@@ -111,7 +111,7 @@ class ServicioCatalogoControladorTests {
     void actualizarServicioInexistenteRetornaNotFound() throws Exception {
         when(servicioCatalogo.actualizarServicio(
                 eq(999L),
-                any(ServicioCatalogo.class)))
+                any(ServicioRequest.class)))
                 .thenThrow(new RecursoNoEncontradoException(
                         "No existe un servicio con id 999"));
 
@@ -130,12 +130,8 @@ class ServicioCatalogoControladorTests {
     }
 
     // Crea un servicio reutilizable para las pruebas correctas.
-    private ServicioCatalogo crearServicioEjemplo() {
-        ServicioCatalogo servicio = new ServicioCatalogo();
-        servicio.setId(1L);
-        servicio.setNombre("Mantencion electrica");
-        servicio.setDescripcion("Revision de instalacion");
-        servicio.setTarifa(new BigDecimal("25000"));
-        return servicio;
+    private ServicioResponse crearServicioEjemplo() {
+        return new ServicioResponse(1L, "Mantencion electrica",
+                "Revision de instalacion", new BigDecimal("25000"));
     }
 }

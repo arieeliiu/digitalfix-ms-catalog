@@ -2,7 +2,10 @@ package cl.digitalfix.catalog.controller;
 
 import java.util.List;
 
+import jakarta.validation.Valid;
+
 import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -11,37 +14,35 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.bind.annotation.DeleteMapping;
 
-import cl.digitalfix.catalog.entity.ServicioCatalogo;
-import cl.digitalfix.catalog.service.ServicioCatalogoServicio;
-import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+
+import cl.digitalfix.catalog.dto.request.ServicioRequest;
+import cl.digitalfix.catalog.dto.response.ServicioResponse;
+import cl.digitalfix.catalog.service.ServicioService;
 
 @RestController
 @RequestMapping("/api/catalog/services")
-public class ServicioCatalogoControlador {
+@RequiredArgsConstructor
+public class ServicioController {
 
-    private final ServicioCatalogoServicio servicioCatalogo;
-
-    public ServicioCatalogoControlador(ServicioCatalogoServicio servicioCatalogo) {
-        this.servicioCatalogo = servicioCatalogo;
-    }
+    private final ServicioService servicioCatalogo;
 
     @GetMapping
-    public List<ServicioCatalogo> listarServicios() {
+    public List<ServicioResponse> listarServicios() {
         return servicioCatalogo.listarServicios();
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public ServicioCatalogo crearServicio(@Valid @RequestBody ServicioCatalogo servicio) {
+    public ServicioResponse crearServicio(@Valid @RequestBody ServicioRequest servicio) {
         return servicioCatalogo.crearServicio(servicio);
     }
 
     @PutMapping("/{id}")
-    public ServicioCatalogo actualizarServicio(
+    public ServicioResponse actualizarServicio(
             @PathVariable Long id,
-            @Valid @RequestBody ServicioCatalogo servicio) {
+            @Valid @RequestBody ServicioRequest servicio) {
 
         return servicioCatalogo.actualizarServicio(id, servicio);
     }

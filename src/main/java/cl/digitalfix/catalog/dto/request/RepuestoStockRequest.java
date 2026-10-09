@@ -1,9 +1,9 @@
-package cl.digitalfix.catalog.dto;
+package cl.digitalfix.catalog.dto.request;
 
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 
-public record RepuestoStockSolicitud(
+public record RepuestoStockRequest(
 
     @NotNull(message = "El repuesto es obligatorio")
     @Positive(message = "El identificador del repuesto debe ser positivo")

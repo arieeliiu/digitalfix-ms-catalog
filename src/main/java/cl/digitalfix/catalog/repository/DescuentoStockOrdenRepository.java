@@ -4,6 +4,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import cl.digitalfix.catalog.entity.DescuentoStockOrden;
 
-public interface DescuentoStockOrdenRepositorio
+public interface DescuentoStockOrdenRepository
         extends JpaRepository<DescuentoStockOrden, Long> {
 }

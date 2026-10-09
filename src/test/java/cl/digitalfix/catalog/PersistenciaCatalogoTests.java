@@ -4,25 +4,25 @@ import java.math.BigDecimal;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import cl.digitalfix.catalog.entity.ServicioCatalogo;
-import cl.digitalfix.catalog.service.ServicioCatalogoServicio;
+import cl.digitalfix.catalog.dto.request.ServicioRequest;
+import cl.digitalfix.catalog.service.ServicioService;
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
 class PersistenciaCatalogoTests {
-    @Autowired ServicioCatalogoServicio servicio;
+    @Autowired ServicioService servicio;
 
     @Test
     void guardaYConsultaCatalogoConJpaReal() {
-        var nuevo = new ServicioCatalogo();
+        var nuevo = new ServicioRequest();
         nuevo.setNombre("Mantención");
         nuevo.setDescripcion("Revisión eléctrica");
         nuevo.setTarifa(new BigDecimal("25000.00"));
         var guardado = servicio.crearServicio(nuevo);
-        assertNotNull(guardado.getId());
+        assertNotNull(guardado.id());
         var leido = servicio.listarServicios().stream()
-            .filter(s -> s.getId().equals(guardado.getId())).findFirst().orElseThrow();
-        assertEquals("Mantención", leido.getNombre());
-        assertEquals(0, new BigDecimal("25000.00").compareTo(leido.getTarifa()));
+            .filter(s -> s.id().equals(guardado.id())).findFirst().orElseThrow();
+        assertEquals("Mantención", leido.nombre());
+        assertEquals(0, new BigDecimal("25000.00").compareTo(leido.tarifa()));
     }
 }

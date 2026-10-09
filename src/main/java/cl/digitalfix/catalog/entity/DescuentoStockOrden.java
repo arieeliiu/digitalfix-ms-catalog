@@ -7,8 +7,14 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
 @Entity
 @Table(name = "descuentos_stock_orden")
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class DescuentoStockOrden {
 
     @Id
@@ -21,25 +27,9 @@ public class DescuentoStockOrden {
     @Column(name = "fecha_descuento", nullable = false)
     private LocalDateTime fechaDescuento;
 
-    protected DescuentoStockOrden() {
-        // Constructor requerido por JPA.
-    }
-
     public DescuentoStockOrden(Long ordenId, String firmaSolicitud) {
         this.ordenId = ordenId;
         this.firmaSolicitud = firmaSolicitud;
         this.fechaDescuento = LocalDateTime.now();
-    }
-
-    public Long getOrdenId() {
-        return ordenId;
-    }
-
-    public String getFirmaSolicitud() {
-        return firmaSolicitud;
-    }
-
-    public LocalDateTime getFechaDescuento() {
-        return fechaDescuento;
     }
 }

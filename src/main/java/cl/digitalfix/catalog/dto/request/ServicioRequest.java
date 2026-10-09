@@ -1,13 +1,7 @@
-package cl.digitalfix.catalog.entity;
+package cl.digitalfix.catalog.dto.request;
 
 import java.math.BigDecimal;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -16,25 +10,19 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-@Entity
-@Table(name = "servicios_catalogo")
 @Getter
 @Setter
 @NoArgsConstructor
-public class ServicioCatalogo {
+public class ServicioRequest {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @NotBlank(message = "El nombre es obligatorio")
-    @Column(nullable = false)
     private String nombre;
 
     private String descripcion;
 
     @NotNull(message = "La tarifa es obligatoria")
     @DecimalMin(value = "0.0", inclusive = true, message = "La tarifa no puede ser negativa")
-    @Column(nullable = false, precision = 12, scale = 2)
     private BigDecimal tarifa;
 }

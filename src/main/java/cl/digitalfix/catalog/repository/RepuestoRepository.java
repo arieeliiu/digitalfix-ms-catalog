@@ -3,15 +3,16 @@ package cl.digitalfix.catalog.repository;
 import java.util.Collection;
 import java.util.List;
 
+import jakarta.persistence.LockModeType;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import cl.digitalfix.catalog.entity.Repuesto;
-import jakarta.persistence.LockModeType;
 
-public interface RepuestoRepositorio extends JpaRepository<Repuesto, Long> {
+public interface RepuestoRepository extends JpaRepository<Repuesto, Long> {
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("""
