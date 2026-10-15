@@ -222,30 +222,7 @@ Misma orden + repuestos o cantidades diferentes
 
 La conexión a Oracle se configura mediante variables de entorno.
 
-Puede utilizarse una URL completa:
-
-```text
-DB_URL
-DB_USERNAME
-DB_PASSWORD
-```
-
-O construirla a partir de:
-
-```text
-DB_HOST
-DB_PORT
-DB_SERVICE
-DB_USERNAME
-DB_PASSWORD
-```
-
-Valores por defecto:
-
-```text
-DB_PORT=1521
-DB_SERVICE=ORCL
-```
+Se requieren `DB_URL`, `DB_USERNAME` y `DB_PASSWORD`. El Compose central en `../digitalfix-infra/docker-compose.yml` entrega estas variables desde `digitalfix-infra/apps/.env`. No se construye la URL a partir de `DB_HOST`, `DB_PORT` o `DB_SERVICE`. El Dockerfile compila el proyecto con Java 21 desde un clon limpio.
 
 Formato esperado:
 
