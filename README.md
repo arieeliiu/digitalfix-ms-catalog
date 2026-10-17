@@ -1,6 +1,11 @@
-# DigitalFix - Microservicio Catalog
+# DigitalFix — Catalog
 
-Microservicio encargado de administrar el catálogo de servicios técnicos y repuestos de DigitalFix.
+Microservicio encargado de administrar el catálogo de servicios técnicos y repuestos de DigitalFix, además de controlar el stock utilizado por las órdenes de trabajo.
+
+## Integrantes
+
+- Ariel Molina
+- Lucas Ferrada
 
 ## Tecnologías
 
@@ -8,39 +13,80 @@ Microservicio encargado de administrar el catálogo de servicios técnicos y rep
 - Spring Boot 4.1.1
 - Maven
 - Spring Data JPA
-- Oracle Database 19c en Amazon RDS
+- Spring Web MVC
+- Jakarta Validation
+- Oracle Database en Amazon RDS
+- H2 para pruebas
+- Lombok
+- Docker
 
-## Integrantes
+## Arquitectura
 
-- Ariel Molina
-- Lucas Ferrada
+Catalog funciona como un microservicio interno.
 
-## Funcionalidades
+El flujo principal es:
 
-Permite:
-
-- Listar, crear, actualizar y eliminar servicios técnicos.
-- Administrar las tarifas de los servicios.
-- Listar, crear, actualizar y eliminar repuestos.
-- Administrar el stock de repuestos.
-- Descontar stock asociado a una orden de trabajo.
-- Evitar descuentos duplicados para una misma orden.
-- Validar reintentos de descuento.
-- Evitar consumos simultáneos inconsistentes de stock.
-- Persistir los datos en Oracle Database en Amazon RDS.
-- Validar nombre obligatorio, tarifa no negativa y stock de repuestos no negativo.
-
-## Endpoints
-
-### Servicios
-
-#### Listar servicios
-
-```http
-GET /api/catalog/services
+```text
+Angular
+   ↓
+AWS API Gateway
+   ↓
+BFF
+   ↓
+Catalog
+   ↓
+Oracle RDS
 ```
 
-#### Crear servicio
+Catalog también participa en el flujo de asignación de órdenes:
+
+```text
+BFF
+ ↓
+Workorders
+ ↓
+Catalog
+ ↓
+Oracle RDS
+```
+
+El frontend no se comunica directamente con Catalog.
+
+## Responsabilidades
+
+Catalog se encarga de:
+
+- administrar servicios técnicos;
+- administrar tarifas de servicios;
+- administrar repuestos;
+- administrar stock;
+- persistir servicios y repuestos en Oracle RDS;
+- validar datos de entrada;
+- descontar stock cuando Workorders asigna una orden;
+- evitar descuentos duplicados;
+- validar reintentos;
+- prevenir inconsistencias de stock durante operaciones simultáneas.
+
+## Puerto
+
+El microservicio utiliza:
+
+```text
+8081
+```
+
+## Servicios técnicos
+
+Catalog expone CRUD completo de servicios.
+
+| Método | Ruta | Función |
+|---|---|---|
+| GET | `/api/catalog/services` | Lista servicios |
+| POST | `/api/catalog/services` | Crea un servicio |
+| PUT | `/api/catalog/services/{id}` | Actualiza un servicio |
+| DELETE | `/api/catalog/services/{id}` | Elimina un servicio |
+
+### Crear servicio
 
 ```http
 POST /api/catalog/services
@@ -50,13 +96,13 @@ Ejemplo:
 
 ```json
 {
-  "nombre": "Mantencion electrica",
-  "descripcion": "Revision general de instalacion electrica",
+  "nombre": "Mantención eléctrica",
+  "descripcion": "Revisión general de instalación eléctrica",
   "tarifa": 25000
 }
 ```
 
-#### Actualizar servicio
+### Actualizar servicio
 
 ```http
 PUT /api/catalog/services/{id}
@@ -66,31 +112,36 @@ Ejemplo:
 
 ```json
 {
-  "nombre": "Mantencion electrica preventiva",
-  "descripcion": "Revision preventiva de la instalacion",
+  "nombre": "Mantención eléctrica preventiva",
+  "descripcion": "Revisión preventiva de la instalación",
   "tarifa": 30000
 }
 ```
 
-#### Eliminar servicio
+### Eliminar servicio
 
 ```http
 DELETE /api/catalog/services/{id}
 ```
 
-Elimina el servicio indicado.
+Si el identificador no existe, Catalog responde:
 
-Si el identificador no existe, retorna `404 Not Found`.
-
-### Repuestos
-
-#### Listar repuestos
-
-```http
-GET /api/catalog/spare-parts
+```text
+404 Not Found
 ```
 
-#### Crear repuesto
+## Repuestos
+
+Catalog expone CRUD completo de repuestos.
+
+| Método | Ruta | Función |
+|---|---|---|
+| GET | `/api/catalog/spare-parts` | Lista repuestos |
+| POST | `/api/catalog/spare-parts` | Crea un repuesto |
+| PUT | `/api/catalog/spare-parts/{id}` | Actualiza un repuesto |
+| DELETE | `/api/catalog/spare-parts/{id}` | Elimina un repuesto |
+
+### Crear repuesto
 
 ```http
 POST /api/catalog/spare-parts
@@ -100,13 +151,13 @@ Ejemplo:
 
 ```json
 {
-  "nombre": "Interruptor termomagnetico",
-  "descripcion": "Interruptor para tablero electrico",
+  "nombre": "Interruptor termomagnético",
+  "descripcion": "Interruptor para tablero eléctrico",
   "stock": 20
 }
 ```
 
-#### Actualizar repuesto
+### Actualizar repuesto
 
 ```http
 PUT /api/catalog/spare-parts/{id}
@@ -116,29 +167,75 @@ Ejemplo:
 
 ```json
 {
-  "nombre": "Interruptor termomagnetico",
-  "descripcion": "Interruptor para tablero electrico",
+  "nombre": "Interruptor termomagnético",
+  "descripcion": "Interruptor para tablero eléctrico",
   "stock": 15
 }
 ```
 
-#### Eliminar repuesto
+### Eliminar repuesto
 
 ```http
 DELETE /api/catalog/spare-parts/{id}
 ```
 
-Elimina el repuesto indicado.
+Si el identificador no existe, responde:
 
-Si el identificador no existe, retorna `404 Not Found`.
+```text
+404 Not Found
+```
 
-#### Descontar stock por orden
+## Validaciones de servicios
+
+Para los servicios se valida:
+
+- `nombre` obligatorio;
+- `tarifa` obligatoria;
+- `tarifa` mayor o igual a cero.
+
+La descripción puede ser opcional.
+
+Ejemplo inválido:
+
+```json
+{
+  "nombre": "",
+  "tarifa": -100
+}
+```
+
+Catalog responde:
+
+```text
+400 Bad Request
+```
+
+## Validaciones de repuestos
+
+Para los repuestos se valida:
+
+- `nombre` obligatorio;
+- `descripcion` obligatoria;
+- `stock` obligatorio;
+- `stock` mayor o igual a cero.
+
+Un stock negativo genera:
+
+```text
+400 Bad Request
+```
+
+## Descuento de stock
+
+Catalog posee un endpoint interno utilizado por Workorders:
 
 ```http
 POST /api/catalog/spare-parts/discount-stock
 ```
 
-Endpoint interno destinado a ser utilizado por Workorders cuando una orden es asignada.
+Este endpoint no corresponde a una operación administrativa del frontend.
+
+Su objetivo es descontar los repuestos utilizados durante la asignación de una orden.
 
 Ejemplo:
 
@@ -156,30 +253,53 @@ Ejemplo:
 
 Catalog valida que:
 
+- `ordenId` exista en la solicitud;
+- `ordenId` sea positivo;
+- exista al menos un repuesto;
+- los identificadores de repuesto sean válidos;
+- las cantidades sean mayores que cero;
 - todos los repuestos existan;
-- exista stock suficiente para todos;
-- una misma orden no descuente stock más de una vez;
-- un reintento de la misma orden corresponda a los mismos repuestos y cantidades.
+- exista stock suficiente.
 
-Si una orden ya descontó stock y recibe nuevamente exactamente la misma solicitud, la operación se considera un reintento válido y no vuelve a descontar.
+## Flujo de descuento
 
-Si la misma orden intenta descontar repuestos o cantidades diferentes, responde `409 Conflict`.
+El flujo implementado es:
 
-Si algún repuesto no existe, responde `404 Not Found`.
+```text
+Orden pasa a ASIGNADA
+        ↓
+Workorders recibe los repuestos
+        ↓
+Workorders llama a Catalog
+        ↓
+Catalog agrupa cantidades
+        ↓
+Catalog bloquea los repuestos
+        ↓
+Catalog valida existencia
+        ↓
+Catalog valida stock
+        ↓
+Catalog descuenta cantidades
+        ↓
+Catalog registra el descuento de la orden
+        ↓
+Oracle RDS
+```
 
-Si no existe stock suficiente, responde `409 Conflict`.
+Si Catalog rechaza la operación, Workorders no finaliza la asignación con esos repuestos.
 
-El descuento se ejecuta dentro de una transacción.
+## Idempotencia
 
-Durante la operación, los repuestos involucrados se bloquean para actualización mediante bloqueo pesimista, evitando que dos órdenes consuman simultáneamente las mismas existencias.
+Catalog evita descontar stock dos veces para la misma orden.
 
-Los identificadores y cantidades repetidos dentro de una misma solicitud se agrupan antes de validar y descontar el stock.
+Cada operación de descuento queda asociada al:
 
-## Idempotencia del descuento
+```text
+ordenId
+```
 
-Cada descuento queda asociado al identificador de la orden.
-
-Catalog guarda una firma de la solicitud procesada, basada en los identificadores de repuesto y sus cantidades.
+Catalog genera una firma basada en los repuestos y cantidades.
 
 Ejemplo:
 
@@ -187,78 +307,269 @@ Ejemplo:
 4:2|7:1
 ```
 
-Esto permite distinguir entre:
+Esto permite distinguir dos situaciones.
+
+### Mismo reintento
 
 ```text
-Misma orden + mismos repuestos y cantidades
-→ reintento válido
-→ no vuelve a descontar
+misma orden
++
+mismos repuestos
++
+mismas cantidades
 ```
 
-y:
+Resultado:
 
 ```text
-Misma orden + repuestos o cantidades diferentes
-→ conflicto
-→ 409 Conflict
+no vuelve a descontar stock
 ```
 
-## Validaciones
+### Reintento diferente
 
-- `nombre` es obligatorio.
-- `tarifa` es obligatoria para los servicios.
-- `tarifa` no puede ser negativa.
-- `stock` es obligatorio para los repuestos.
-- `stock` no puede ser negativo.
-- `ordenId` debe ser válido para una solicitud de descuento.
-- `repuestoId` debe ser positivo.
-- `cantidad` debe ser mayor que cero.
-- Una solicitud de descuento debe contener al menos un repuesto.
-- Datos inválidos retornan `400 Bad Request`.
-- Un identificador inexistente retorna `404 Not Found`.
-- Stock insuficiente o un reintento inconsistente retorna `409 Conflict`.
+```text
+misma orden
++
+repuestos o cantidades diferentes
+```
 
-## Variables de entorno
+Resultado:
 
-La conexión a Oracle se configura mediante variables de entorno.
+```text
+409 Conflict
+```
 
-Se requieren `DB_URL`, `DB_USERNAME` y `DB_PASSWORD`. El Compose central en `../digitalfix-infra/docker-compose.yml` entrega estas variables desde `digitalfix-infra/apps/.env`. No se construye la URL a partir de `DB_HOST`, `DB_PORT` o `DB_SERVICE`. El Dockerfile compila el proyecto con Java 21 desde un clon limpio.
+## Agrupación de repuestos
 
-Formato esperado:
+Si una solicitud contiene varias veces el mismo repuesto, Catalog agrupa las cantidades antes de procesarlas.
+
+Ejemplo:
+
+```json
+{
+  "ordenId": 20,
+  "repuestos": [
+    {
+      "repuestoId": 4,
+      "cantidad": 2
+    },
+    {
+      "repuestoId": 4,
+      "cantidad": 3
+    }
+  ]
+}
+```
+
+Catalog procesa el resultado como:
+
+```text
+repuesto 4
+cantidad total 5
+```
+
+## Control de concurrencia
+
+Durante el descuento de stock se utiliza bloqueo pesimista:
+
+```text
+PESSIMISTIC_WRITE
+```
+
+Los repuestos solicitados son bloqueados mientras se realiza la transacción.
+
+Esto evita que dos órdenes descuenten simultáneamente las mismas unidades disponibles y generen un stock inconsistente.
+
+## Transacción de stock
+
+El descuento se ejecuta dentro de una transacción.
+
+Antes de guardar los cambios se valida que:
+
+- todos los repuestos existan;
+- todos tengan stock suficiente.
+
+Solo después se realiza el descuento.
+
+Esto evita aplicar parcialmente una solicitud donde algunos repuestos son válidos y otros no.
+
+## Manejo de errores de stock
+
+### Repuesto inexistente
+
+```text
+404 Not Found
+```
+
+### Stock insuficiente
+
+```text
+409 Conflict
+```
+
+### Orden reutilizada con contenido diferente
+
+```text
+409 Conflict
+```
+
+### Solicitud inválida
+
+```text
+400 Bad Request
+```
+
+## Persistencia
+
+Catalog utiliza Oracle Database en Amazon RDS.
+
+Persiste información relacionada con:
+
+```text
+servicios
+repuestos
+stock
+descuentos realizados por orden
+```
+
+La información de órdenes de trabajo no pertenece a Catalog.
+
+Catalog solo almacena el identificador necesario para controlar la idempotencia del descuento.
+
+## Configuración de Oracle
+
+La conexión utiliza:
+
+```text
+DB_URL
+DB_USERNAME
+DB_PASSWORD
+```
+
+Ejemplo de formato:
 
 ```text
 jdbc:oracle:thin:@//HOST:1521/SERVICIO
 ```
 
-Las credenciales no deben almacenarse en el repositorio.
+Las credenciales reales no deben almacenarse en Git.
+
+En el despliegue Docker se entregan mediante:
+
+```text
+digitalfix-infra/apps/.env
+```
+
+## Hibernate
+
+Actualmente se utiliza:
+
+```properties
+spring.jpa.hibernate.ddl-auto=update
+```
+
+Hibernate crea o actualiza las estructuras necesarias sin eliminar los datos existentes durante esta etapa del proyecto.
+
+También se configura:
+
+```properties
+spring.jpa.open-in-view=false
+```
+
+para evitar mantener la sesión de persistencia abierta durante toda la respuesta HTTP.
+
+## Configuración principal
+
+El archivo:
+
+```text
+src/main/resources/application.properties
+```
+
+configura:
+
+- puerto `8081`;
+- URL de Oracle RDS;
+- usuario de Oracle;
+- contraseña de Oracle;
+- driver JDBC;
+- configuración de Hibernate.
+
+## Comunicación con BFF
+
+Para operaciones del catálogo utilizadas desde el frontend, el flujo es:
+
+```text
+Frontend
+→ API Gateway
+→ BFF
+→ Catalog
+```
+
+El BFF controla los permisos según el rol antes de reenviar las operaciones.
+
+Actualmente:
+
+```text
+Admin
+```
+
+puede crear, editar y eliminar servicios y repuestos.
+
+```text
+Operador
+```
+
+puede consultar servicios y repuestos.
+
+```text
+Cliente
+```
+
+puede consultar servicios.
+
+Catalog permanece como servicio interno y no se expone directamente desde el frontend.
+
+## Comunicación con Workorders
+
+Para el descuento de stock:
+
+```text
+Workorders
+→ Catalog
+```
+
+Workorders utiliza:
+
+```http
+POST /api/catalog/spare-parts/discount-stock
+```
+
+cuando una orden pasa a estado `ASIGNADA` y contiene repuestos.
+
+Catalog es responsable de validar y modificar el stock.
 
 ## Ejecución local
 
-Configurar primero las variables de entorno y luego ejecutar:
+Configurar las variables:
+
+```text
+DB_URL
+DB_USERNAME
+DB_PASSWORD
+```
+
+Luego ejecutar:
 
 ```powershell
 .\mvnw.cmd spring-boot:run
 ```
 
-El servicio queda disponible por defecto en:
+El servicio queda disponible en:
 
 ```text
 http://localhost:8081
 ```
-
-## Persistencia
-
-Durante el desarrollo, Hibernate administra la actualización del esquema mediante:
-
-```text
-spring.jpa.hibernate.ddl-auto=update
-```
-
-Catalog persiste actualmente información relacionada con:
-
-- servicios técnicos;
-- repuestos y stock;
-- órdenes que ya realizaron un descuento de stock.
 
 ## Pruebas
 
@@ -268,68 +579,143 @@ Ejecutar:
 .\mvnw.cmd verify
 ```
 
-Las pruebas automatizadas actuales cubren principalmente:
+Las pruebas actuales cubren principalmente:
 
-- consulta correcta de servicios;
-- creación correcta de servicios;
-- actualización correcta de servicios;
+- listado de servicios;
+- creación de servicios;
+- actualización de servicios;
+- eliminación de servicios;
+- operaciones de repuestos;
 - validaciones de entrada;
-- respuestas `400 Bad Request`;
-- respuestas `404 Not Found`;
-- persistencia mediante H2 en el entorno de pruebas existente.
+- respuestas HTTP;
+- persistencia mediante H2.
 
-Además, se verificó con `mvnw verify` que la lógica de descuento de stock, idempotencia por orden y bloqueo de repuestos compila correctamente sin afectar las pruebas automatizadas existentes.
-
-Actualmente no existen pruebas automatizadas específicas para:
-
-- descuento de stock;
-- reintentos idempotentes;
-- conflictos por contenido diferente;
-- concurrencia sobre el mismo stock.
-
-Estos comportamientos deben comprobarse mediante pruebas específicas o durante la integración entre Workorders y Catalog.
-
-## Despliegue integrado
-
-Catalog se ejecuta como un servicio interno y no debe exponerse directamente a Internet.
-
-La arquitectura esperada es:
+La integración real de stock también se comprueba mediante las pruebas funcionales del sistema desplegado:
 
 ```text
-Frontend
-→ API Gateway
-→ BFF
+BFF
 → Workorders
 → Catalog
 → Oracle RDS
 ```
 
-El descuento de stock será solicitado por Workorders al asignar una orden.
+## Docker
 
-La orquestación del despliegue se mantiene en el repositorio `digitalfix-infra`, desde donde se configuran las variables de entorno y la comunicación entre los servicios.
+Catalog se construye mediante:
 
-La conexión real con Oracle RDS debe verificarse nuevamente después de desplegar esta versión.
+```text
+Dockerfile
+```
 
-## Refactor por capas (5 de octubre de 2026)
+El despliegue conjunto se administra desde:
 
-Los controllers utilizan DTOs independientes en `dto/request` y `dto/response`.
-La capa service coordina persistencia y mapeo mediante `mapper`, sin exponer
-entidades JPA en los contratos HTTP. Las validaciones, rutas, códigos, estados,
-reglas de dominio y configuración existentes se conservan.
-Las solicitudes de repuestos conservan stock cero cuando se omite el campo y rechazan un valor null explícito.
+```text
+digitalfix-infra/docker-compose.yml
+```
 
-La revisión y las decisiones integradas se documentan en
-[REFACTOR.md del BFF](../digitalfix-ms-bff/REFACTOR.md), disponible en el workspace
-con los repositorios hermanos. No se incorpora RabbitMQ ni Kafka.
+El Compose central ejecuta:
 
+```text
+BFF
+Catalog
+Workorders
+```
 
-## Convención técnica y Lombok (9 de octubre de 2026)
+Catalog utiliza internamente el puerto:
 
-Se aplica dominio en español + sufijo técnico en inglés: Controller, Service,
-Repository, Client, Request, Response, Config, Mapper y Exception. Los DTOs record
-se conservan; Lombok reemplaza únicamente código repetitivo de clases mutables
-y constructores simples. Los contratos y la configuración existentes se preservan.
+```text
+8081
+```
 
-[REFACTOR_LOMBOK.md](REFACTOR_LOMBOK.md) contiene el inventario de renombrados,
-las decisiones de compatibilidad, resultados de Maven con Java 21 y deuda técnica.
-Los nombres que aparecen en secciones anteriores corresponden a etapas previas.
+pero no lo publica directamente hacia Internet.
+
+Los servicios se comunican mediante la red Docker.
+
+## Despliegue actual
+
+Actualmente Catalog se ejecuta en contenedor dentro de la instancia EC2.
+
+El flujo desplegado es:
+
+```text
+Angular
+   ↓
+AWS API Gateway
+   ↓
+BFF en EC2
+   ├──→ Catalog en EC2
+   │       ↓
+   │    Oracle RDS
+   │
+   └──→ Workorders en EC2
+            ↓
+          Catalog
+            ↓
+         Oracle RDS
+```
+
+La conexión real con Oracle RDS está integrada y es utilizada por los CRUD y por el control de stock.
+
+## Estructura principal
+
+El proyecto se organiza por responsabilidades:
+
+```text
+controller
+service
+repository
+entity
+dto
+mapper
+exception
+```
+
+Los controllers exponen los endpoints.
+
+Los services contienen las reglas de negocio.
+
+Los repositories administran la persistencia.
+
+Las entities representan los datos almacenados.
+
+Los DTOs representan solicitudes y respuestas.
+
+Los mappers separan las entidades JPA de los contratos HTTP.
+
+## Estado actual
+
+Actualmente se encuentran operativos:
+
+- listado de servicios;
+- creación de servicios;
+- actualización de servicios;
+- eliminación de servicios;
+- listado de repuestos;
+- creación de repuestos;
+- actualización de repuestos;
+- eliminación de repuestos;
+- persistencia en Oracle RDS;
+- administración real de stock;
+- descuento de stock desde Workorders;
+- agrupación de repuestos repetidos;
+- idempotencia de descuentos;
+- validación de stock suficiente;
+- bloqueo pesimista durante el descuento;
+- prevención de descuentos duplicados;
+- integración con BFF;
+- integración con Workorders;
+- integración con Docker en EC2.
+
+El CRUD del catálogo y la integración con Oracle RDS fueron probados funcionalmente desde el frontend administrativo.
+
+## Documentación técnica
+
+Los archivos de refactor existentes conservan información histórica sobre reorganización por capas, convenciones técnicas y uso de Lombok.
+
+El `README.md` representa el estado funcional actual de Catalog.
+
+## Flujo de trabajo
+
+Los cambios se desarrollan en ramas independientes y se integran a `main` mediante Pull Request.
+
+La rama `main` representa la versión estable utilizada para la entrega.
