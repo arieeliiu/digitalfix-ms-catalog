@@ -27,6 +27,10 @@ public class DescuentoStockOrden {
     @Column(name = "fecha_descuento", nullable = false)
     private LocalDateTime fechaDescuento;
 
+    public void actualizarFirma(String nuevaFirma) {
+        this.firmaSolicitud = nuevaFirma;
+    }
+
     public DescuentoStockOrden(Long ordenId, String firmaSolicitud) {
         this.ordenId = ordenId;
         this.firmaSolicitud = firmaSolicitud;
