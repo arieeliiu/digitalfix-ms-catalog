@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 import lombok.RequiredArgsConstructor;
 
 import cl.digitalfix.catalog.dto.request.DescontarStockRequest;
+import cl.digitalfix.catalog.dto.request.AjustarStockOrdenRequest;
 import cl.digitalfix.catalog.dto.request.RepuestoRequest;
 import cl.digitalfix.catalog.dto.response.RepuestoResponse;
 import cl.digitalfix.catalog.service.RepuestoService;
@@ -52,6 +53,13 @@ public class RepuestoController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void eliminarRepuesto(@PathVariable Long id) {
         repuestoServicio.eliminarRepuesto(id);
+    }
+
+    // Ajuste absoluto e idempotente para órdenes previamente asignadas.
+    @PutMapping("/adjust-order-stock")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void ajustarStock(@Valid @RequestBody AjustarStockOrdenRequest solicitud) {
+        repuestoServicio.ajustarStock(solicitud);
     }
 
     @PostMapping("/discount-stock")
