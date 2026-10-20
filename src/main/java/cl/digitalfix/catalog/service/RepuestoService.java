@@ -1,6 +1,9 @@
 package cl.digitalfix.catalog.service;
 
 import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.function.Function;
@@ -14,6 +17,7 @@ import org.springframework.web.server.ResponseStatusException;
 import lombok.RequiredArgsConstructor;
 
 import cl.digitalfix.catalog.dto.request.DescontarStockRequest;
+import cl.digitalfix.catalog.dto.request.AjustarStockOrdenRequest;
 import cl.digitalfix.catalog.dto.request.RepuestoRequest;
 import cl.digitalfix.catalog.dto.request.RepuestoStockRequest;
 import cl.digitalfix.catalog.dto.response.RepuestoResponse;
@@ -59,6 +63,77 @@ public class RepuestoService {
         }
 
         repositorio.deleteById(id);
+    }
+
+    // Reconciliación idempotente: Catalog conserva una firma de la reserva por orden.
+    // El caller proporciona la reserva anterior y la nueva para evitar sobrescrituras.
+    @Transactional
+    public void ajustarStock(AjustarStockOrdenRequest solicitud) {
+        var previos = cantidades(solicitud.anteriores());
+        var nuevos = cantidades(solicitud.nuevos());
+        String anterior = firma(previos);
+        String objetivo = firma(nuevos);
+        var registro = descuentoStockRepositorio.buscarParaActualizar(solicitud.ordenId());
+        String actual = registro.map(DescuentoStockOrden::getFirmaSolicitud).orElse("-");
+        if (actual.equals(objetivo)) return; // Reintento: la diferencia ya fue aplicada.
+        if (!actual.equals(anterior)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "La reserva de la orden cambió; actualiza los datos antes de reintentar");
+        }
+
+        Set<Long> ids = new TreeSet<>(previos.keySet());
+        ids.addAll(nuevos.keySet());
+        if (ids.isEmpty()) return;
+        var afectados = repositorio.buscarTodosParaActualizar(ids);
+        var porId = afectados.stream().collect(Collectors.toMap(Repuesto::getId, Function.identity()));
+        var calculados = new HashMap<Long, Integer>();
+        for (Long id : ids) {
+            int antes = previos.getOrDefault(id, 0);
+            int despues = nuevos.getOrDefault(id, 0);
+            int diferencia = despues - antes;
+            if (diferencia == 0) continue;
+            var repuesto = porId.get(id);
+            if (repuesto == null) {
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No existe el repuesto " + id);
+            }
+            long disponible = (long) repuesto.getStock() - diferencia;
+            if (disponible < 0 || disponible > Integer.MAX_VALUE) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT,
+                        "Stock insuficiente o fuera de rango para el repuesto " + id);
+            }
+            calculados.put(id, (int) disponible);
+        }
+        for (var repuesto : afectados) {
+            if (calculados.containsKey(repuesto.getId())) {
+                repuesto.setStock(calculados.get(repuesto.getId()));
+            }
+        }
+        repositorio.saveAll(afectados);
+        if (registro.isPresent()) registro.get().actualizarFirma(objetivo);
+        else descuentoStockRepositorio.save(new DescuentoStockOrden(solicitud.ordenId(), objetivo));
+    }
+
+    private Map<Long, Integer> cantidades(List<RepuestoStockRequest> repuestos) {
+        Map<Long, Integer> valores = new TreeMap<>();
+        for (var repuesto : repuestos) {
+            if (repuesto == null || repuesto.repuestoId() == null || repuesto.cantidad() == null
+                    || repuesto.repuestoId() <= 0 || repuesto.cantidad() <= 0) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Repuesto o cantidad inválidos");
+            }
+            if (valores.putIfAbsent(repuesto.repuestoId(), repuesto.cantidad()) != null) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Repuesto duplicado");
+            }
+        }
+        return valores;
+    }
+
+    private String firma(Map<Long, Integer> cantidades) {
+        if (cantidades.isEmpty()) return "-"; // Oracle transforma cadenas vacías en NULL.
+        var firma = cantidades.entrySet().stream()
+                .map(e -> e.getKey() + ":" + e.getValue()).collect(Collectors.joining("|"));
+        if (firma.length() > 2000)
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Demasiados repuestos para la orden");
+        return firma;
     }
 
     @Transactional
